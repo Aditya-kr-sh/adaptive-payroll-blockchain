@@ -5,3 +5,4 @@ flask-bcrypt==1.0.1
 flask-jwt-extended==4.5.2
 python-dotenv==1.0.0
 gunicorn==21.2.0
+reportlab==4.0.4
