@@ -10,6 +10,7 @@ def initialize_database():
     user = os.getenv("DB_USER", "root")
     password = os.getenv("DB_PASSWORD", "")
     db_name = os.getenv("DB_NAME", "adaptive_payroll")
+    port = int(os.getenv("DB_PORT", 3306))
     
     # Path to schema.sql
     schema_path = os.path.join(os.path.dirname(__file__), '..', 'database', 'schema.sql')
@@ -19,7 +20,8 @@ def initialize_database():
         conn = mysql.connector.connect(
             host=host,
             user=user,
-            password=password
+            password=password,
+            port=port
         )
         cursor = conn.cursor()
         
