@@ -7,12 +7,18 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Database configuration from .env
+try:
+    raw_port = os.getenv("DB_PORT", "17104")
+    db_port = int(raw_port)
+except:
+    db_port = 17104
+
 db_config = {
-    "host": os.getenv("DB_HOST", "localhost"),
-    "user": os.getenv("DB_USER", "root"),
+    "host": os.getenv("DB_HOST", "mysql-2e9703cd-adaptive-payroll-db.l.aivencloud.com"),
+    "user": os.getenv("DB_USER", "avnadmin"),
     "password": os.getenv("DB_PASSWORD", ""),
     "database": os.getenv("DB_NAME", "defaultdb"),
-    "port": int(os.getenv("DB_PORT", 3306))
+    "port": db_port
 }
 
 # Create a connection pool

@@ -28,6 +28,10 @@ app.register_blueprint(tax_bp, url_prefix='/api/tax')
 from routes.auth_routes import auth_bp
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 
+@app.route('/', methods=['GET'])
+def index():
+    return {"message": "Welcome to AdaptivePay API - Secure Blockchain Payroll System"}
+
 @app.route('/api/health', methods=['GET'])
 def health():
     return {"status": "ok", "message": "AdaptivePay API is running"}
