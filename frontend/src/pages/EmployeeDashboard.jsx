@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { UserCircleIcon, IdentificationIcon, BuildingOfficeIcon, CurrencyDollarIcon, CalendarDaysIcon, ArrowRightOnRectangleIcon, DocumentDuplicateIcon, CheckCircleIcon, PlusIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { UserCircleIcon, IdentificationIcon, BuildingOfficeIcon, CurrencyDollarIcon, CalendarDaysIcon, ArrowRightOnRectangleIcon, DocumentDuplicateIcon, CheckCircleIcon, PlusIcon, ClockIcon, LinkIcon } from '@heroicons/react/24/outline';
 import { SunIcon, MoonIcon } from '@heroicons/react/24/solid';
 
 const EmployeeDashboard = ({ employeeId, onLogout }) => {
@@ -370,9 +370,17 @@ const EmployeeDashboard = ({ employeeId, onLogout }) => {
                 {payslips.length > 0 ? (
                   payslips.slice(0, 3).map((p) => (
                     <div key={p.payroll_id} className="flex items-center justify-between p-6 bg-slate-50 dark:bg-slate-800/40 rounded-[2rem] border border-transparent dark:border-slate-800/50 hover:bg-white dark:hover:bg-slate-800 transition-all group">
-                      <div>
-                        <p className="font-black text-slate-800 dark:text-slate-100 uppercase tracking-tighter text-lg">{p.month_year}</p>
-                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-black mt-1">NET PAYABLE: ₹{formatCurrency(p.net_salary)}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <p className="font-black text-slate-800 dark:text-slate-100 uppercase tracking-tighter text-lg">{p.month_year}</p>
+                          {p.status === 'Stored in Blockchain' && (
+                            <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-lg text-[9px] font-black uppercase tracking-widest border border-emerald-200 dark:border-emerald-800/50 animate-pulse">
+                              <LinkIcon className="w-3 h-3" />
+                              Blockchain Verified
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-black mt-1">NET PAYABLE: INR {formatCurrency(p.net_salary)}</p>
                       </div>
                       <button 
                         onClick={async () => {
