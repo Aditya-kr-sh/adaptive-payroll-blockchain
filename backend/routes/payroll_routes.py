@@ -172,7 +172,8 @@ def download_payslip(payroll_id):
             SELECT p.*, e.name as employee_name, e.email, e.department, e.role, e.phone, b.hash
             FROM payroll p 
             JOIN employees e ON p.employee_id = e.employee_id
-            LEFT JOIN blockchain_blocks b ON p.employee_id = b.employee_id AND p.month_year = b.month
+            LEFT JOIN blockchain_blocks b ON p.employee_id = CAST(JSON_EXTRACT(b.data, '$.employee_id') AS UNSIGNED) 
+                AND p.month_year = JSON_UNQUOTE(JSON_EXTRACT(b.data, '$.month'))
             WHERE p.payroll_id = %s AND p.org_domain = %s
         """, (payroll_id, domain))
         record = cursor.fetchone()
