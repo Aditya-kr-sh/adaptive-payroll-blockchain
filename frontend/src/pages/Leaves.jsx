@@ -12,6 +12,10 @@ const statusColors = {
 const leaveColors = ['badge-blue', 'badge-purple', 'badge-green', 'badge-gray'];
 
 const Leaves = () => {
+  const isAdmin = localStorage.getItem('isAdmin') === 'true';
+  const employeeId = localStorage.getItem('employeeId');
+  const userRole = localStorage.getItem('role') || '';
+
   const [requests, setRequests] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
@@ -19,20 +23,28 @@ const Leaves = () => {
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState('requests');
   const [filterStatus, setFilterStatus] = useState('');
-  const [selectedEmpId, setSelectedEmpId] = useState('');
+  const [selectedEmpId, setSelectedEmpId] = useState(isAdmin ? '' : employeeId);
   const [form, setForm] = useState({
-    employee_id: '', leave_type_id: '', start_date: '', end_date: '', reason: ''
+    employee_id: isAdmin ? '' : employeeId, 
+    leave_type_id: '', 
+    start_date: '', 
+    end_date: '', 
+    reason: ''
   });
   const [message, setMessage] = useState('');
 
   useEffect(() => {
     fetchAll();
+    if (!isAdmin) fetchBalance(employeeId);
   }, [filterStatus]);
 
   const fetchAll = async () => {
+    const params = { status: filterStatus || undefined };
+    if (!isAdmin) params.employee_id = employeeId;
+
     const [reqRes, empRes, typeRes] = await Promise.all([
-      api.get('/leaves/requests', { params: { status: filterStatus || undefined } }),
-      api.get('/employees/'),
+      api.get('/leaves/requests', { params }),
+      isAdmin ? api.get('/employees/') : Promise.resolve({ data: [] }),
       api.get('/leaves/types')
     ]);
     setRequests(reqRes.data);
@@ -56,7 +68,6 @@ const Leaves = () => {
     }
   };
 
-  const userRole = localStorage.getItem('userRole') || '';
   const canApprove = (status) => {
     if (userRole === 'Manager' && status === 'Pending') return true;
     if (userRole === 'HR' && status === 'Manager Approved') return true;
@@ -66,7 +77,7 @@ const Leaves = () => {
 
   const canReject = (status) => {
     return ['Pending', 'Manager Approved', 'HR Approved'].includes(status) && 
-           ['Manager', 'HR', 'Admin'].includes(userRole);
+           ['Manager', 'HR', 'Admin', 'Admin'].includes(userRole);
   };
 
   const handleSubmit = async (e) => {
@@ -75,7 +86,8 @@ const Leaves = () => {
     setShowModal(false);
     showMsg('✅ Leave request submitted successfully!');
     fetchAll();
-    setForm({ employee_id: '', leave_type_id: '', start_date: '', end_date: '', reason: '' });
+    if (!isAdmin) fetchBalance(employeeId);
+    setForm({ employee_id: isAdmin ? '' : employeeId, leave_type_id: '', start_date: '', end_date: '', reason: '' });
   };
 
   const showMsg = (msg, isError = false) => {
@@ -91,8 +103,8 @@ const Leaves = () => {
       {/* Header */}
       <div className="section-header">
         <div>
-          <h1 className="page-title gradient-text">Leave Management</h1>
-          <p className="page-subtitle">Manage leave requests, approvals, and balances</p>
+          <h1 className="page-title gradient-text">{isAdmin ? 'Leave Management' : 'My Leaves'}</h1>
+          <p className="page-subtitle">{isAdmin ? 'Manage leave requests, approvals, and balances' : 'View your leave history and balances'}</p>
         </div>
         <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
           <DocumentTextIcon className="w-4 h-4" /> Request Leave
@@ -102,7 +114,7 @@ const Leaves = () => {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-6">
         {[
-          { label: 'Total Requests', value: requests.length, color: 'text-indigo-600', bg: 'bg-indigo-100' },
+          { label: isAdmin ? 'Total Requests' : 'My Requests', value: requests.length, color: 'text-indigo-600', bg: 'bg-indigo-100' },
           { label: 'Pending Approval', value: pending, color: 'text-amber-600', bg: 'bg-amber-100' },
           { label: 'Approved', value: approved, color: 'text-emerald-600', bg: 'bg-emerald-100' }
         ].map(s => (
@@ -124,13 +136,13 @@ const Leaves = () => {
       {/* Tabs */}
       <div className="flex gap-2 bg-gray-100/80 dark:bg-slate-900/50 p-1 rounded-xl w-fit border border-transparent dark:border-slate-800">
         {['requests', 'balance'].map(tab => (
-          <button key={tab} onClick={() => { setActiveTab(tab); if (tab === 'balance') fetchBalance(selectedEmpId); }}
+          <button key={tab} onClick={() => { setActiveTab(tab); if (tab === 'balance' && isAdmin) fetchBalance(selectedEmpId); }}
             className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
               activeTab === tab 
                 ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 shadow-sm' 
                 : 'text-gray-500 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300'
             }`}>
-            {tab === 'requests' ? '📋 Leave Requests' : '💰 Leave Balance'}
+            {tab === 'requests' ? (isAdmin ? '📋 Leave Requests' : '📋 My Requests') : (isAdmin ? '💰 Balance Overview' : '💰 My Balance')}
           </button>
         ))}
       </div>
@@ -139,7 +151,7 @@ const Leaves = () => {
       {activeTab === 'requests' && (
         <div className="glass-card p-6">
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-base font-bold text-gray-800 dark:text-white">All Leave Requests</h2>
+            <h2 className="text-base font-bold text-gray-800 dark:text-white">{isAdmin ? 'All Leave Requests' : 'My Leave History'}</h2>
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="input-field w-44">
               <option value="">All Status</option>
               <option value="Pending">Pending</option>
@@ -150,7 +162,7 @@ const Leaves = () => {
           <div className="mobile-table-wrapper">
             <table className="data-table">
               <thead>
-                <tr><th>ID</th><th>Employee</th><th>Leave Type</th><th>Period</th><th>Days</th><th>Reason</th><th>Status</th><th>Actions</th></tr>
+                <tr><th>ID</th>{isAdmin && <th>Employee</th>}<th>Leave Type</th><th>Period</th><th>Days</th><th>Reason</th><th>Status</th>{isAdmin && <th>Actions</th>}</tr>
               </thead>
               <tbody>
                 {requests.map(r => {
@@ -158,17 +170,19 @@ const Leaves = () => {
                   return (
                     <tr key={r.request_id}>
                       <td><span className="text-xs font-bold text-purple-600 dark:text-purple-400">#{String(r.employee_id).padStart(3, '0')}</span></td>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-xs">
-                            {r.employee_name?.charAt(0)}
+                      {isAdmin && (
+                        <td>
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-xs">
+                              {r.employee_name?.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-800 dark:text-white text-xs">{r.employee_name}</p>
+                              <p className="text-gray-400 dark:text-slate-500 text-xs">{r.department}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-semibold text-gray-800 dark:text-white text-xs">{r.employee_name}</p>
-                            <p className="text-gray-400 dark:text-slate-500 text-xs">{r.department}</p>
-                          </div>
-                        </div>
-                      </td>
+                        </td>
+                      )}
                       <td><span className="badge badge-purple">{r.leave_type}</span></td>
                       <td className="text-xs text-gray-600">
                         <p>{r.start_date}</p><p className="text-gray-400">to {r.end_date}</p>
@@ -176,22 +190,24 @@ const Leaves = () => {
                       <td><span className="font-bold text-indigo-600">{days}d</span></td>
                       <td className="text-gray-500 text-xs max-w-xs truncate">{r.reason || '—'}</td>
                       <td><span className={`badge ${statusColors[r.status]}`}>{r.status}</span></td>
-                      <td>
-                        <div className="flex gap-1">
-                          {canApprove(r.status) && (
-                            <button onClick={() => handleStatusChange(r.request_id, 'Approved')}
-                              className="p-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-700 transition-colors" title="Approve">
-                              <CheckIcon className="w-4 h-4" />
-                            </button>
-                          )}
-                          {canReject(r.status) && (
-                            <button onClick={() => handleStatusChange(r.request_id, 'Rejected')}
-                              className="p-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 transition-colors" title="Reject">
-                              <XMarkIcon className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
+                      {isAdmin && (
+                        <td>
+                          <div className="flex gap-1">
+                            {canApprove(r.status) && (
+                              <button onClick={() => handleStatusChange(r.request_id, 'Approved')}
+                                className="p-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-700 transition-colors" title="Approve">
+                                <CheckIcon className="w-4 h-4" />
+                              </button>
+                            )}
+                            {canReject(r.status) && (
+                              <button onClick={() => handleStatusChange(r.request_id, 'Rejected')}
+                                className="p-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 transition-colors" title="Reject">
+                                <XMarkIcon className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -205,13 +221,15 @@ const Leaves = () => {
       {/* Leave Balance */}
       {activeTab === 'balance' && (
         <div className="glass-card p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <select value={selectedEmpId} onChange={e => { setSelectedEmpId(e.target.value); fetchBalance(e.target.value); }}
-              className="input-field w-64">
-              <option value="">Select Employee</option>
-              {employees.map(e => <option key={e.employee_id} value={e.employee_id}>{e.name}</option>)}
-            </select>
-          </div>
+          {isAdmin && (
+            <div className="flex items-center gap-3 mb-6">
+              <select value={selectedEmpId} onChange={e => { setSelectedEmpId(e.target.value); fetchBalance(e.target.value); }}
+                className="input-field w-64">
+                <option value="">Select Employee</option>
+                {employees.map(e => <option key={e.employee_id} value={e.employee_id}>{e.name}</option>)}
+              </select>
+            </div>
+          )}
           {balance.length > 0 && (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {balance.map((b, i) => {
@@ -232,7 +250,7 @@ const Leaves = () => {
             </div>
           )}
           {balance.length === 0 && selectedEmpId && <p className="text-gray-400 text-center py-6">No balance data found.</p>}
-          {!selectedEmpId && <p className="text-gray-400 text-center py-6">Select an employee to view their leave balance.</p>}
+          {isAdmin && !selectedEmpId && <p className="text-gray-400 text-center py-6">Select an employee to view their leave balance.</p>}
         </div>
       )}
 
@@ -242,14 +260,16 @@ const Leaves = () => {
           <div className="modal-box animate-fade-in-up">
             <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-5">Request Leave</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Employee</label>
-                <select className="input-field" required value={form.employee_id}
-                  onChange={e => setForm({ ...form, employee_id: e.target.value })}>
-                  <option value="">Select Employee</option>
-                  {employees.map(e => <option key={e.employee_id} value={e.employee_id}>{e.name}</option>)}
-                </select>
-              </div>
+              {isAdmin && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Employee</label>
+                  <select className="input-field" required value={form.employee_id}
+                    onChange={e => setForm({ ...form, employee_id: e.target.value })}>
+                    <option value="">Select Employee</option>
+                    {employees.map(e => <option key={e.employee_id} value={e.employee_id}>{e.name}</option>)}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Leave Type</label>
                 <select className="input-field" required value={form.leave_type_id}

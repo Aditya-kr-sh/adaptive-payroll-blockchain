@@ -169,8 +169,10 @@ def download_payslip(payroll_id):
     try:
         cursor = conn.cursor(dictionary=True)
         cursor.execute("""
-            SELECT p.*, e.name as employee_name, e.email, e.department, e.role, e.phone
-            FROM payroll p JOIN employees e ON p.employee_id = e.employee_id
+            SELECT p.*, e.name as employee_name, e.email, e.department, e.role, e.phone, b.hash
+            FROM payroll p 
+            JOIN employees e ON p.employee_id = e.employee_id
+            LEFT JOIN blockchain_blocks b ON p.employee_id = b.employee_id AND p.month_year = b.month
             WHERE p.payroll_id = %s AND p.org_domain = %s
         """, (payroll_id, domain))
         record = cursor.fetchone()

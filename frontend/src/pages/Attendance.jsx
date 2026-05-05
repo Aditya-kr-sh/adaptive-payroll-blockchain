@@ -16,6 +16,8 @@ const statusColors = {
 };
 
 const Attendance = () => {
+  const isAdmin = localStorage.getItem('isAdmin') === 'true';
+  const employeeId = localStorage.getItem('employeeId');
   const [employees, setEmployees] = useState([]);
   const [records, setRecords] = useState([]);
   const [summary, setSummary] = useState([]);
@@ -23,10 +25,12 @@ const Attendance = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [markMode, setMarkMode] = useState({});
   const [message, setMessage] = useState('');
-  const [activeTab, setActiveTab] = useState('mark');
+  const [activeTab, setActiveTab] = useState(isAdmin ? 'mark' : 'records');
 
   useEffect(() => {
-    fetchEmployees();
+    if (isAdmin) {
+      fetchEmployees();
+    }
     fetchAttendance();
     fetchSummary();
   }, [selectedMonth]);
@@ -40,12 +44,16 @@ const Attendance = () => {
   };
 
   const fetchAttendance = async () => {
-    const res = await api.get('/attendance/', { params: { month: selectedMonth } });
+    const params = { month: selectedMonth };
+    if (!isAdmin) params.employee_id = employeeId;
+    const res = await api.get('/attendance/', { params });
     setRecords(res.data);
   };
 
   const fetchSummary = async () => {
-    const res = await api.get('/attendance/summary', { params: { month: selectedMonth } });
+    const params = { month: selectedMonth };
+    if (!isAdmin) params.employee_id = employeeId;
+    const res = await api.get('/attendance/summary', { params });
     setSummary(res.data);
   };
 
@@ -122,13 +130,17 @@ const Attendance = () => {
     }
   };
 
+  const availableTabs = isAdmin 
+    ? [{ id: 'mark', label: '📋 Mark Attendance' }, { id: 'records', label: '📊 Records' }, { id: 'analytics', label: '📈 Analytics' }]
+    : [{ id: 'records', label: '📊 My History' }, { id: 'analytics', label: '📈 My Analytics' }];
+
   return (
     <div className="space-y-8 animate-fade-in-up">
       {/* Header */}
       <div className="section-header">
         <div>
-          <h1 className="page-title gradient-text">Attendance Management</h1>
-          <p className="page-subtitle">Track and manage employee attendance records</p>
+          <h1 className="page-title gradient-text">{isAdmin ? 'Attendance Management' : 'My Attendance'}</h1>
+          <p className="page-subtitle">{isAdmin ? 'Track and manage employee attendance records' : 'View your attendance and performance records'}</p>
         </div>
         <div className="flex gap-3 items-center">
           <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}
@@ -139,9 +151,9 @@ const Attendance = () => {
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-6">
         {[
-          { label: 'Total Present', value: totalPresent, icon: CheckCircleIcon, color: 'text-emerald-600', bg: 'bg-emerald-100' },
-          { label: 'Total Absent', value: totalAbsent, icon: XCircleIcon, color: 'text-red-500', bg: 'bg-red-100' },
-          { label: 'On Leave', value: totalLeave, icon: ClockIcon, color: 'text-amber-500', bg: 'bg-amber-100' }
+          { label: isAdmin ? 'Total Present' : 'Present Days', value: totalPresent, icon: CheckCircleIcon, color: 'text-emerald-600', bg: 'bg-emerald-100' },
+          { label: isAdmin ? 'Total Absent' : 'Absent Days', value: totalAbsent, icon: XCircleIcon, color: 'text-red-500', bg: 'bg-red-100' },
+          { label: isAdmin ? 'On Leave' : 'Leave Days', value: totalLeave, icon: ClockIcon, color: 'text-amber-500', bg: 'bg-amber-100' }
         ].map(s => (
           <div key={s.label} className="stat-card">
             <div className={`${s.bg} dark:bg-opacity-10 p-3 rounded-xl`}>
@@ -157,14 +169,14 @@ const Attendance = () => {
 
       {/* Tabs */}
       <div className="flex gap-2 bg-gray-100/80 dark:bg-slate-900/50 p-1 rounded-xl w-fit border border-transparent dark:border-slate-800">
-        {['mark', 'records', 'analytics'].map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
+        {availableTabs.map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === tab 
+              activeTab === tab.id
                 ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 shadow-sm' 
                 : 'text-gray-500 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300'
             }`}>
-            {tab === 'mark' ? '📋 Mark Attendance' : tab === 'records' ? '📊 Records' : '📈 Analytics'}
+            {tab.label}
           </button>
         ))}
       </div>
