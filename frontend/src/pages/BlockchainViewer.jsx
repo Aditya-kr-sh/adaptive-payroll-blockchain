@@ -38,9 +38,13 @@ const BlockchainViewer = () => {
 
   const filtered = chain.filter(b => {
     if (!search) return true;
-    const dataStr = typeof b.data === 'object' ? JSON.stringify(b.data) : b.data;
-    return dataStr.toLowerCase().includes(search.toLowerCase()) ||
-           String(b.block_index).includes(search);
+    const searchLower = search.toLowerCase();
+    const dataStr = typeof b.data === 'object' ? JSON.stringify(b.data) : String(b.data);
+    
+    return dataStr.toLowerCase().includes(searchLower) ||
+           String(b.block_index).includes(searchLower) ||
+           String(b.hash).toLowerCase().includes(searchLower) ||
+           String(b.previous_hash).toLowerCase().includes(searchLower);
   });
 
   return (
