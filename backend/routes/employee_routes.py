@@ -34,6 +34,23 @@ def get_employees():
             
         cursor.execute(query, params)
         employees = cursor.fetchall()
+
+        # --- Self-Healing Logic: Ensure everyone has a login ---
+        from extensions import bcrypt
+        for emp in employees:
+            cursor.execute("SELECT id FROM users WHERE email = %s", (emp['email'],))
+            if not cursor.fetchone():
+                first_name = emp['name'].split(' ')[0]
+                pin = f"{first_name}{emp['employee_id']}"
+                hashed_pwd = bcrypt.generate_password_hash(pin).decode('utf-8')
+                cursor.execute(
+                    "INSERT INTO users (email, password, role, org_domain) VALUES (%s, %s, %s, %s)",
+                    (emp['email'], hashed_pwd, 'Employee', domain)
+                )
+                conn.commit()
+                print(f"Self-healed login for: {emp['name']}")
+        # -----------------------------------------------------
+
         return jsonify(employees), 200
     except mysql.connector.Error as err:
         return jsonify({"error": str(err)}), 500
