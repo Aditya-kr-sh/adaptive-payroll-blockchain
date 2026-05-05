@@ -77,10 +77,9 @@ def register():
         )
         conn.commit()
         return jsonify({"message": "User registered successfully", "org_domain": org_domain}), 201
-    except mysql.connector.Error as err:
-        if err.errno == 1062:
-            return jsonify({"error": "Email already exists"}), 409
-        return jsonify({"error": str(err)}), 500
+    except Exception as e:
+        print(f"REGISTRATION ERROR: {str(e)}")
+        return jsonify({"error": str(e)}), 500
     finally:
         if conn:
             conn.close()

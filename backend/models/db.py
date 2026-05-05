@@ -17,10 +17,13 @@ db_config = {
 
 # Create a connection pool
 try:
+    # Aiven requires SSL. If you have the CA cert, you can use it, 
+    # but 'ssl_disabled=False' is often enough to trigger secure negotiation.
     connection_pool = pooling.MySQLConnectionPool(
         pool_name="adaptive_pool",
         pool_size=20,
         pool_reset_session=True,
+        ssl_disabled=False,
         **db_config
     )
     print("Database connection pool created successfully.")

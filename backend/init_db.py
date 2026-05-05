@@ -21,7 +21,8 @@ def initialize_database():
             host=host,
             user=user,
             password=password,
-            port=port
+            port=port,
+            ssl_disabled=False
         )
         cursor = conn.cursor()
         
