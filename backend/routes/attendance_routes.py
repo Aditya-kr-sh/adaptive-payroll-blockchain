@@ -8,18 +8,23 @@ import mysql.connector
 attendance_bp = Blueprint('attendance_bp', __name__)
 
 @attendance_bp.route('', methods=['GET'], strict_slashes=False)
-@role_required(['Manager', 'HR', 'Admin'])
+@role_required(['Manager', 'HR', 'Admin', 'Employee'])
 def get_all_attendance():
     domain = get_request_domain()
     if not domain:
         return jsonify({"error": "Organization domain required"}), 400
         
+    claims = get_jwt()
     conn = get_db_connection()
     try:
         cursor = conn.cursor(dictionary=True)
         emp_id = request.args.get('employee_id')
         month = request.args.get('month')
         
+        # Security: Employees can only see their own
+        if claims.get('role') == 'Employee':
+            emp_id = claims.get('employee_id')
+
         query = """
             SELECT a.*, e.name as employee_name 
             FROM attendance a JOIN employees e ON a.employee_id = e.employee_id
@@ -102,16 +107,23 @@ def mark_bulk_attendance():
         conn.close()
 
 @attendance_bp.route('/summary', methods=['GET'])
-@role_required(['Manager', 'HR', 'Admin'])
+@role_required(['Manager', 'HR', 'Admin', 'Employee'])
 def get_attendance_summary():
     domain = get_request_domain()
     if not domain:
         return jsonify({"error": "Organization domain required"}), 400
         
+    claims = get_jwt()
     conn = get_db_connection()
     try:
         cursor = conn.cursor(dictionary=True)
         month = request.args.get('month')
+        emp_id = request.args.get('employee_id')
+
+        # Security: Employees can only see their own
+        if claims.get('role') == 'Employee':
+            emp_id = claims.get('employee_id')
+
         query = """
             SELECT 
                 e.employee_id, e.name, e.department,
@@ -126,8 +138,14 @@ def get_attendance_summary():
             query += " AND DATE_FORMAT(a.date, '%Y-%m') = %s"
             params.append(month)
         
-        query += " WHERE e.status = 'Active' AND e.org_domain = %s GROUP BY e.employee_id, e.name, e.department"
+        query += " WHERE e.status = 'Active' AND e.org_domain = %s "
         params.append(domain)
+
+        if emp_id:
+            query += " AND e.employee_id = %s "
+            params.append(emp_id)
+
+        query += " GROUP BY e.employee_id, e.name, e.department"
         
         cursor.execute(query, params)
         summary = cursor.fetchall()
