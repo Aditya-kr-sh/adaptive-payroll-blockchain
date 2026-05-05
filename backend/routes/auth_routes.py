@@ -23,6 +23,29 @@ def unified_login():
         cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cursor.fetchone()
 
+        if not user:
+            # --- Just-in-Time Account Creation: Check if they are an employee ---
+            cursor.execute("SELECT * FROM employees WHERE email = %s AND status = 'Active'", (email,))
+            emp = cursor.fetchone()
+            if emp:
+                first_name = emp['name'].split(' ')[0]
+                pin = f"{first_name}{emp['employee_id']}"
+                # If the password matches the PIN formula, create the account on the fly
+                if password == pin:
+                    hashed_pwd = bcrypt.generate_password_hash(pin).decode('utf-8')
+                    cursor.execute(
+                        "INSERT INTO users (email, password, role, org_domain) VALUES (%s, %s, %s, %s)",
+                        (email, hashed_pwd, 'Employee', emp['org_domain'])
+                    )
+                    conn.commit()
+                    # Re-fetch the newly created user
+                    cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+                    user = cursor.fetchone()
+                else:
+                    return jsonify({"error": "Account not initialized. Use your default PIN (FirstName + ID)."}), 401
+            else:
+                return jsonify({"error": "Invalid credentials"}), 401
+
         if user and bcrypt.check_password_hash(user['password'], password):
             # If it's an employee, we need to find their actual employee_id from the employees table
             real_id = user['id']
@@ -40,7 +63,7 @@ def unified_login():
                 "message": "Login successful",
                 "access_token": access_token,
                 "user": {
-                    "id": real_id, # Use real_id for employee-dashboard
+                    "id": real_id,
                     "email": user['email'],
                     "role": user['role'],
                     "org_domain": user['org_domain']
