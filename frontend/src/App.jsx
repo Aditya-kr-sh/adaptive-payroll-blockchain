@@ -67,16 +67,8 @@ function App() {
           </>
         )}
 
-        {/* Employee Routes */}
-        {isEmployee && (
-          <>
-            <Route path="/employee-dashboard" element={<EmployeeDashboard employeeId={employeeId} onLogout={handleLogout} />} />
-            <Route path="*" element={<Navigate to="/employee-dashboard" replace />} />
-          </>
-        )}
-
-        {/* Admin Routes */}
-        {isAdmin && (
+        {/* Unified Layout for Authenticated Users */}
+        {isAuthenticated && (
           <Route
             path="/*"
             element={
@@ -97,16 +89,28 @@ function App() {
                   <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-100/40 dark:bg-indigo-900/10 rounded-full blur-[100px] -z-10 translate-x-1/2 -translate-y-1/2"></div>
                   <div className="px-4 sm:px-8 py-6 sm:py-10 max-w-7xl mx-auto min-h-full animate-fade-in-up">
                     <Routes>
-                      <Route path="/" element={<Dashboard />} />
-                      <Route path="/employees" element={<Employees />} />
+                      {/* Shared Routes */}
                       <Route path="/attendance" element={<Attendance />} />
                       <Route path="/leaves" element={<Leaves />} />
-                      <Route path="/payroll" element={<Payroll />} />
                       <Route path="/payslips" element={<Payslips />} />
-                      <Route path="/analytics" element={<Analytics />} />
-                      <Route path="/tax" element={<TaxSlabs />} />
                       <Route path="/blockchain" element={<BlockchainViewer />} />
-                      <Route path="*" element={<Navigate to="/" replace />} />
+
+                      {/* Role Specific Homepages */}
+                      {isAdmin ? (
+                        <>
+                          <Route path="/" element={<Dashboard />} />
+                          <Route path="/employees" element={<Employees />} />
+                          <Route path="/payroll" element={<Payroll />} />
+                          <Route path="/analytics" element={<Analytics />} />
+                          <Route path="/tax" element={<TaxSlabs />} />
+                          <Route path="*" element={<Navigate to="/" replace />} />
+                        </>
+                      ) : (
+                        <>
+                          <Route path="/" element={<EmployeeDashboard employeeId={employeeId} onLogout={handleLogout} />} />
+                          <Route path="*" element={<Navigate to="/" replace />} />
+                        </>
+                      )}
                     </Routes>
                   </div>
                 </main>

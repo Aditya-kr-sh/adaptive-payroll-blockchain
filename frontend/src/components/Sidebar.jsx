@@ -8,17 +8,19 @@ import {
 } from '@heroicons/react/24/outline';
 
 const Sidebar = ({ onLogout, isOpen, onClose }) => {
+  const isAdmin = localStorage.getItem('isAdmin') === 'true';
+
   const navItems = [
     { name: 'Dashboard', path: '/', icon: HomeIcon },
-    { name: 'Employees', path: '/employees', icon: UsersIcon },
+    { name: 'Employees', path: '/employees', icon: UsersIcon, adminOnly: true },
     { name: 'Attendance', path: '/attendance', icon: CalendarIcon },
     { name: 'Leaves', path: '/leaves', icon: DocumentTextIcon },
-    { name: 'Payroll', path: '/payroll', icon: CurrencyDollarIcon },
+    { name: 'Payroll', path: '/payroll', icon: CurrencyDollarIcon, adminOnly: true },
     { name: 'Payslips', path: '/payslips', icon: DocumentDuplicateIcon },
-    { name: 'Analytics', path: '/analytics', icon: ChartBarIcon },
-    { name: 'Tax Slabs', path: '/tax', icon: CalculatorIcon },
+    { name: 'Analytics', path: '/analytics', icon: ChartBarIcon, adminOnly: true },
+    { name: 'Tax Slabs', path: '/tax', icon: CalculatorIcon, adminOnly: true },
     { name: 'Audit Log', path: '/blockchain', icon: LinkIcon },
-  ];
+  ].filter(item => !item.adminOnly || isAdmin);
 
   const [isDarkMode, setIsDarkMode] = React.useState(
     localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)
