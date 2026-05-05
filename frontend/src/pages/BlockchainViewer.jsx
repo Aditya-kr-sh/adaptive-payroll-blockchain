@@ -36,15 +36,23 @@ const BlockchainViewer = () => {
     PAYSLIP_DOWNLOADED: 'badge-yellow',
   };
 
-  const filtered = chain.filter(b => {
+  const filtered = (chain || []).filter(b => {
+    if (!b) return false;
     if (!search) return true;
     const searchLower = search.toLowerCase();
-    const dataStr = typeof b.data === 'object' ? JSON.stringify(b.data) : String(b.data);
+    
+    // Safely handle data stringification
+    let dataStr = "";
+    try {
+      dataStr = typeof b.data === 'object' ? JSON.stringify(b.data) : String(b.data || "");
+    } catch (e) {
+      dataStr = "";
+    }
     
     return dataStr.toLowerCase().includes(searchLower) ||
-           String(b.block_index).includes(searchLower) ||
-           String(b.hash).toLowerCase().includes(searchLower) ||
-           String(b.previous_hash).toLowerCase().includes(searchLower);
+           String(b.block_index || "").includes(searchLower) ||
+           String(b.hash || "").toLowerCase().includes(searchLower) ||
+           String(b.previous_hash || "").toLowerCase().includes(searchLower);
   });
 
   return (
