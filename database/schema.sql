@@ -1,7 +1,5 @@
 -- database/schema.sql
-DROP DATABASE IF EXISTS adaptive_payroll;
-CREATE DATABASE adaptive_payroll;
-USE adaptive_payroll;
+
 
 -- =============================================
 -- EMPLOYEES

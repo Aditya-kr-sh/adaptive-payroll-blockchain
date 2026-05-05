@@ -22,6 +22,7 @@ def initialize_database():
             user=user,
             password=password,
             port=port,
+            database=db_name,
             ssl_disabled=False
         )
         cursor = conn.cursor()
@@ -30,7 +31,6 @@ def initialize_database():
         print(f"Reading schema from {schema_path}...")
         with open(schema_path, 'r') as f:
             schema_sql = f.read()
-            
         statements = schema_sql.split(';')
         
         for statement in statements:
