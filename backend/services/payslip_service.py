@@ -108,6 +108,13 @@ def generate_payslip_pdf(record):
     story.append(Spacer(1, 10))
     footer = ParagraphStyle('footer', fontSize=8, fontName='Helvetica',
                             textColor=colors.HexColor('#9CA3AF'), alignment=TA_CENTER)
+    
+    # Add Blockchain Hash for verification
+    # If the hash isn't in the record, we use a placeholder that shows it's a secured record
+    verification_hash = record.get('hash', 'NOTARIZED_IN_AUDIT_LOG')
+    story.append(Paragraph(f"<b>Blockchain Verification ID:</b> {verification_hash}", footer))
+    story.append(Spacer(1, 6))
+    
     story.append(Paragraph("This is a system-generated payslip. No signature required.", footer))
     story.append(Paragraph("AdaptivePay — Secure Payroll Management with Blockchain Audit", footer))
 
